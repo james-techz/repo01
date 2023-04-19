@@ -1,0 +1,33 @@
+1. clean requirements.txt
+
+- get all the required packages:
+	+ from all the .py file imports:
+		grep import *.py -R > tmp.txt
+	  then check the imports to see which packages are required
+	+ from plans_project/settings.py
+	  they are in the MIDDLEWARE and INSTALLED_APPS configuration
+- pick the required packages versions from origin requirements.txt to -> new requirements.txt file
+- remove psycopg2==2.9.5 package (installed from source, which requires building tools availble), because the package is installed in binary form in "psycopg2-binary==2.9.5" already
+
+2. change the .gitignore file to exclude requirements.txt file
+- requirements.txt file needs to be pushed to beanstalk so it knows which packages to install
+- EB CLI uses git to deploy code to beanstalk, so if we ignore the *.txt files, we cannot push requirements.txt to beanstalk
+
+3. change django.config to meet requirements of new beanstalk environment, and add migration script at the start of new  deployment
+
+
+container_commands:
+  01_migrate:
+    command: "source /var/app/venv/*/bin/activate && python3 manage.py migrate"
+    leader_only: true
+option_settings:
+  aws:elasticbeanstalk:container:python:
+    WSGIPath: plans_project.wsgi:application
+
+4. after deploying successfully, need to get new URL from beanstalk and put it to plans_project/settings.py -> ALLOWED_HOST
+
+5. create admin user
+(SSH to beanstalk environment)
+	source /var/app/venv/*/bin/activate
+	cd /var/app/current
+	python3 manage.py createsuperuser
